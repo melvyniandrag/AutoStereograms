@@ -45,12 +45,12 @@ public class CreateStereogram {
 		
 		// step 2, 3, 4, 5: shift the pixels of the previous strip according to the whiteness or blackness
 		// of the pixel in the depth map.
-		final int PIXEL_SHIFT = 3;
+		final int PIXEL_SHIFT = -2;
 		
 		for(int iter = 1; iter < 5; iter++) {
 			for(int row = 0; row < output.getHeight(); row++) {
 				for(int col = iter * 25; col < (( iter + 1) * 25); col++) {
-					int sourcePixel = output.getRGB(col - 25*iter, row);
+					int sourcePixel = output.getRGB(col - 25, row);
 					if(depthMap.getRGB(col - 25, row) == WHITE) {
 						output.setRGB(col + PIXEL_SHIFT, row, sourcePixel);
 					}
@@ -62,6 +62,8 @@ public class CreateStereogram {
 			}
 		}
 		
+		CreateDepthMap.writeImage(depthMap);
+		CreateRandomPattern.writeImage(randomNoise);
 		writeImage(output);
 		
 		
