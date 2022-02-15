@@ -3,17 +3,48 @@ package magiceye;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 
 import javax.imageio.ImageIO;
 
 public class CreateStereogram {
-
+	private static final int N_STRIPS = 8;
+	
 	public static void main(String[] args) {
-		BufferedImage depthMap = CreateDepthMap.CreateImage();
-		BufferedImage randomNoise = CreateRandomPattern.CreateImage(depthMap.getHeight(), depthMap.getWidth()/4);
+		
+		//BufferedImage depthMap = CreateDepthMap.CreateImage();
+        BufferedImage depthMap;
+        try{
+        	depthMap = ImageIO.read(new File("squirrel.png"));
+        } catch (Exception e) {
+        	System.err.println("Unable to read input file");
+        	System.err.println(e.getMessage());
+;        	return;
+        }
+        for(int row = 0; row < depthMap.getHeight(); row++) {
+        	for(int col = 0 ; col < depthMap.getWidth(); col++) {
+        		int pixel = depthMap.getRGB(col,  row);
+        		if(pixel < 0xFF000000) {
+        			System.err.println("found transparent pixel");
+        			return;
+        		}
+        	}
+        }
+        
+		
+		if(depthMap.getWidth() % N_STRIPS != 0) {
+			System.err.println("ERROR: Need a depthmap with width divisible by " + N_STRIPS + ".");
+			return;
+		}
+		
+		final int STRIP_WIDTH = depthMap.getWidth() / N_STRIPS;
+		
+		BufferedImage randomNoise = CreateRandomPattern.CreateImage(depthMap.getHeight(), STRIP_WIDTH);
 		
 		
-		BufferedImage output = new BufferedImage(randomNoise.getWidth() * 5, CreateDepthMap.HEIGHT, BufferedImage.TYPE_INT_ARGB);
+		BufferedImage output = new BufferedImage(randomNoise.getWidth() * (N_STRIPS + 1),
+												depthMap.getHeight(), 
+												BufferedImage.TYPE_INT_ARGB);
 		
 		// step 0: set background of output to all black.
 		for(int row = 0; row < output.getHeight(); row++) {
@@ -32,23 +63,33 @@ public class CreateStereogram {
 		
 		// step 2, 3, 4, 5: shift the pixels of the previous strip according to the whiteness or blackness
 		// of the pixel in the depth map.
-		final int PIXEL_SHIFT = -2;
+		final int LIGHT_PIXEL_SHIFT = -4;
+		final int DARK_PIXEL_SHIFT = -2;
 		
-		for(int iter = 1; iter < 5; iter++) {
+		for(int iter = 1; iter < N_STRIPS + 1; iter++) {
 			for(int row = 0; row < output.getHeight(); row++) {
-				for(int col = iter * 25; col < (( iter + 1) * 25); col++) {
-					int sourcePixel = output.getRGB(col - 25, row);
-					if(depthMap.getRGB(col - 25, row) == Util.WHITE) {
-						output.setRGB(col + PIXEL_SHIFT, row, sourcePixel);
+				for(int col = iter * STRIP_WIDTH; col < (( iter + 1) * STRIP_WIDTH); col++) {
+					int sourcePixel = output.getRGB(col - STRIP_WIDTH, row);
+					if(depthMap.getRGB(col - STRIP_WIDTH, row) < 0xFF333333) {
+						output.setRGB(col, row, sourcePixel);
+						//output.setRGB(col, row, 0xFFFF0000); // red
+					}
+					else if(depthMap.getRGB(col - STRIP_WIDTH, row) < 0xFFBBBBBB) {
+						output.setRGB(col + DARK_PIXEL_SHIFT, row, sourcePixel);
+						//output.setRGB(col,  row, 0xFF0000FF); // blue
 					}
 					else {
-						output.setRGB(col, row, sourcePixel);
+						//output.setRGB(col,  row, 0xFF00FF00); // GREEN
+						//output.setRGB(col, row, sourcePixel);
+						output.setRGB(col + LIGHT_PIXEL_SHIFT, row, sourcePixel);
 					}
 					
 				}
 			}
 		}
 		
+		Util.writeImage(depthMap, "depthMap.png");
+		Util.writeImage(randomNoise, "randomNoise.png");
 		Util.writeImage(output, "stereogram2.png");
 		
 		
