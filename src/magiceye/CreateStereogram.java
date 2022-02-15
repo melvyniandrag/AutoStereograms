@@ -7,31 +7,18 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 public class CreateStereogram {
-	
-	private static final int BLACK = 0xFF000000;
-	private static final int WHITE = 0xFFFFFFFF;
-	
-	public static void writeImage(BufferedImage image) {
-		String path = "stereogram.png";
-		File ImageFile = new File(path);
-		try {
-			ImageIO.write(image, "png", ImageFile);
-		}catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
+
 	public static void main(String[] args) {
-		BufferedImage randomNoise = CreateRandomPattern.CreateImage();
 		BufferedImage depthMap = CreateDepthMap.CreateImage();
+		BufferedImage randomNoise = CreateRandomPattern.CreateImage(depthMap.getHeight(), depthMap.getWidth()/4);
 		
 		
-		BufferedImage output = new BufferedImage(CreateRandomPattern.WIDTH * 5, CreateDepthMap.HEIGHT, BufferedImage.TYPE_INT_ARGB);
+		BufferedImage output = new BufferedImage(randomNoise.getWidth() * 5, CreateDepthMap.HEIGHT, BufferedImage.TYPE_INT_ARGB);
 		
 		// step 0: set background of output to all black.
 		for(int row = 0; row < output.getHeight(); row++) {
 			for(int col = 0; col < output.getWidth(); col++) {
-				output.setRGB(col, row, BLACK);
+				output.setRGB(col, row, Util.BLACK);
 			}
 		}
 		
@@ -51,7 +38,7 @@ public class CreateStereogram {
 			for(int row = 0; row < output.getHeight(); row++) {
 				for(int col = iter * 25; col < (( iter + 1) * 25); col++) {
 					int sourcePixel = output.getRGB(col - 25, row);
-					if(depthMap.getRGB(col - 25, row) == WHITE) {
+					if(depthMap.getRGB(col - 25, row) == Util.WHITE) {
 						output.setRGB(col + PIXEL_SHIFT, row, sourcePixel);
 					}
 					else {
@@ -62,9 +49,7 @@ public class CreateStereogram {
 			}
 		}
 		
-		CreateDepthMap.writeImage(depthMap);
-		CreateRandomPattern.writeImage(randomNoise);
-		writeImage(output);
+		Util.writeImage(output, "stereogram2.png");
 		
 		
 	}
